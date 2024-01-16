@@ -138,13 +138,15 @@ class MyServiceSpy: MyService {
 ```
 This example uses "DEBUG", but you can specify any flags you wish. For example, you could use "TESTS", and then make the macro available to your test targets by adding the "TESTS" flag to them under the "Active Compilation Conditions" custom build flags.
 
+The default value is `SPYABLE`.
+
 #### A Caveat Regarding Xcode Previews
 Limiting spy availability may become restrictive if you intend to use spies in your Xcode Previews. If you intend to use spies with previews and you also want to prevent spies from being used in production code, the advised course of action is to split off previews into their own target where you can define a custom flag (Ex: "SPIES_ENABLED"), like this:
 
 ```
--- MyFeature (`SPIES_ENABLED = 0`)
----- MyFeatureTests (`SPIES_ENABLED = 1`)
----- MyFeaturePreviews (`SPIES_ENABLED = 1`)
+-- MyFeature (`SPYABLE = 0`)
+---- MyFeatureTests (`SPYABLE = 1`)
+---- MyFeaturePreviews (`SPYABLE = 1`)
 ```
 Like the example before, you would specify this custom build flag under "Active Compilation Conditions" of both the `MyFeatureTests` and `MyFeaturePreviews` targets.
 

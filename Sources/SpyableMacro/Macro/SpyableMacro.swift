@@ -61,13 +61,19 @@ public enum SpyableMacro: PeerMacro {
 extension DeclSyntaxProtocol {
   /// - Returns: The preprocessor `flag` parameter that can be optionally provided via `@Spyable(flag:)`.
   fileprivate var preprocessorFlag: String? {
-    self.as(ProtocolDeclSyntax.self)?.attributes.first?
+    let namedFlag = self.as(ProtocolDeclSyntax.self)?.attributes.first?
       .as(AttributeSyntax.self)?.arguments?
       .as(LabeledExprListSyntax.self)?.first {
         $0.label?.text == "behindPreprocessorFlag"
-      }?
-      .as(LabeledExprSyntax.self)?.expression
-      .as(StringLiteralExprSyntax.self)?.segments.first?
-      .as(StringSegmentSyntax.self)?.content.text
+      }
+    if let namedFlag {
+      return
+        namedFlag
+        .as(LabeledExprSyntax.self)?.expression
+        .as(StringLiteralExprSyntax.self)?.segments.first?
+        .as(StringSegmentSyntax.self)?.content.text
+    } else {
+      return "SPYABLE"
+    }
   }
 }

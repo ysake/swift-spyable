@@ -49,6 +49,7 @@ final class UT_SpyableMacro: XCTestCase {
 
         \(protocolDeclaration)
 
+        #if SPYABLE
         class ServiceProtocolSpy: ServiceProtocol {
             var name: String {
                 get {
@@ -178,12 +179,13 @@ final class UT_SpyableMacro: XCTestCase {
                 assertClosure?(message())
             }
         }
+        #endif
         """,
       macros: sut
     )
   }
 
-  func testMacroWithFlag() {
+  func testMacroWithCustomFlag() {
     let protocolDeclaration = """
       public protocol ServiceProtocol {
           var variable: Bool? { get set }
@@ -203,6 +205,29 @@ final class UT_SpyableMacro: XCTestCase {
             var variable: Bool?
         }
         #endif
+        """,
+      macros: sut
+    )
+  }
+
+  func testMacroWithNoFlag() {
+    let protocolDeclaration = """
+      public protocol ServiceProtocol {
+          var variable: Bool? { get set }
+      }
+      """
+    assertMacroExpansion(
+      """
+      @Spyable(behindPreprocessorFlag: nil)
+      \(protocolDeclaration)
+      """,
+      expandedSource: """
+
+        \(protocolDeclaration)
+
+        class ServiceProtocolSpy: ServiceProtocol {
+            var variable: Bool?
+        }
         """,
       macros: sut
     )
