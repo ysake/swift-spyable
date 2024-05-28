@@ -1,7 +1,7 @@
 # Spyable
 
 ![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/Matejkob/swift-spyable/Test_SwiftPM.yml?label=CI&logo=GitHub)
-[![Codecov](https://img.shields.io/codecov/c/github/Matejkob/swift-spyable?token=YRMM1BDQ85)](https://app.codecov.io/gh/Matejkob/swift-spyable)
+[![codecov](https://codecov.io/gh/Matejkob/swift-spyable/graph/badge.svg?token=YRMM1BDQ85)](https://codecov.io/gh/Matejkob/swift-spyable)
 [![](https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftpackageindex.com%2Fapi%2Fpackages%2FMatejkob%2Fswift-spyable%2Fbadge%3Ftype%3Dswift-versions)](https://swiftpackageindex.com/Matejkob/swift-spyable)
 [![](https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftpackageindex.com%2Fapi%2Fpackages%2FMatejkob%2Fswift-spyable%2Fbadge%3Ftype%3Dplatforms)](https://swiftpackageindex.com/Matejkob/swift-spyable)
 
@@ -109,9 +109,11 @@ func testFetchConfig() async throws {
 
 ### Restricting the Availability of Spies
 
-If you wish, you can limit where Spyable's generated code can be used from. This can be useful if you want to prevent spies from being used in user-facing production code.
+If you wish, you can limit where `Spyable`'s generated code can be used from. This can be useful if you want to prevent spies from being used in user-facing production code.
 
-To enforce this restriction, supply the `behindPreprocessorFlag: String?` parameter of Spyable, like this:
+To apply this conditional compilation, use the `behindPreprocessorFlag: String?` parameter within the `@Spyable` attribute. This parameter accepts a **static string literal** representing the compilation flag that controls the inclusion of the generated spy code.
+
+Example usage with the `DEBUG` flag:
 
 ```swift
 @Spyable(behindPreprocessorFlag: "DEBUG")
@@ -119,7 +121,8 @@ protocol MyService {
     func fetchData() async
 }
 ```
-With `behindPreprocessorFlag` specified as DEBUG, the macro expansion will be wrapped in an #if DEBUG preprocessor macro, preventing its use anywhere that the DEBUG flag is not defined:
+
+With `behindPreprocessorFlag` specified as `DEBUG`, the macro expansion will be wrapped in an `#if DEBUG` preprocessor macro, preventing its use anywhere that the `DEBUG` flag is not defined:
 
 ```swift
 #if DEBUG
@@ -129,24 +132,31 @@ class MyServiceSpy: MyService {
         return fetchDataCallsCount > 0
     }
     var fetchDataClosure: (() async -> Void)?
-        func fetchData() async {
+
+    func fetchData() async {
         fetchDataCallsCount += 1
         await fetchDataClosure?()
     }
 }
 #endif
 ```
-This example uses "DEBUG", but you can specify any flags you wish. For example, you could use "TESTS", and then make the macro available to your test targets by adding the "TESTS" flag to them under the "Active Compilation Conditions" custom build flags.
+
+This approach allows for great flexibility, enabling you to define any flag (e.g., `TESTS`) and configure your build settings to include the spy code only in specific targets (like test or preview targets) by defining the appropriate flag under "Active Compilation Conditions" in your project's build settings.
+
+> [!IMPORTANT]
+> When specifying the `behindPreprocessorFlag` argument, it is crucial to use a static string literal. This requirement ensures that the preprocessor flag's integrity is maintained and that conditional compilation behaves as expected. The Spyable system will provide a diagnostic message if the argument does not meet this requirement, guiding you to correct the implementation.
 
 #### A Caveat Regarding Xcode Previews
-Limiting spy availability may become restrictive if you intend to use spies in your Xcode Previews. If you intend to use spies with previews and you also want to prevent spies from being used in production code, the advised course of action is to split off previews into their own target where you can define a custom flag (Ex: "SPIES_ENABLED"), like this:
+
+Limiting the availability of spy implementations through conditional compilation can impact the usability of spies in Xcode Previews. If you rely on spies within your previews while also wanting to exclude them from production builds, consider defining a separate compilation flag (e.g., `SPIES_ENABLED`) for preview and test targets:
 
 ```
 -- MyFeature (`SPIES_ENABLED = 0`)
 ---- MyFeatureTests (`SPIES_ENABLED = 1`)
 ---- MyFeaturePreviews (`SPIES_ENABLED = 1`)
 ```
-Like the example before, you would specify this custom build flag under "Active Compilation Conditions" of both the `MyFeatureTests` and `MyFeaturePreviews` targets.
+
+Set this custom flag under the "Active Compilation Conditions" for both your `MyFeatureTests` and `MyFeaturePreviews` targets to seamlessly integrate spy functionality where needed without affecting production code.
 
 ## Examples
 
@@ -158,26 +168,25 @@ The latest documentation for this library is available [here](https://swiftpacka
 
 ## Installation
 
-> Warning: Xcode beta 15.x command line tools are required. 
+### Integrating with Xcode Projects
 
-**For Xcode project**
+To incorporate Spyable into your Xcode project, add it as a package dependency:
 
-If you are using Xcode beta 15.x command line tools, you can add
- [swift-spyable](https://github.com/Matejkob/swift-spyable) macro to your project as a package.
+```
+https://github.com/Matejkob/swift-spyable
+```
 
-> `https://github.com/Matejkob/swift-spyable`
+### Using with Swift Package Manager (SwiftPM)
 
-**For Swift Package Manager**
+For projects utilizing Swift Package Manager, you can include Spyable by modifying your `Package.swift` file. Add the following to your `dependencies` array:
 
-In `Package.swift` add:
-
-``` swift
+```swift
 dependencies: [
-  .package(url: "https://github.com/Matejkob/swift-spyable", from: "0.1.0")
+  .package(url: "https://github.com/Matejkob/swift-spyable", from: "0.3.0")
 ]
 ```
 
-and then add the product to any target that needs access to the macro:
+Next, to use Spyable in your project, append the product to the appropriate target(s) in your `Package.swift`:
 
 ```swift
 .product(name: "Spyable", package: "swift-spyable"),
